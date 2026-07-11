@@ -701,17 +701,9 @@ function drawVisitSnapshotFace(ctx, expressionData, x, y, scale) {
   ctx.restore();
 }
 
-async function downloadVisitSnapshot() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 960;
-  canvas.height = 720;
-  const ctx = canvas.getContext("2d");
-  const expression = state.visit.currentExpression || { id: inmateFace.dataset.expression || "idle" };
-  const reaction = inmateReaction.textContent || "對方表情管理已宣告破產。";
-  const boothGlass = document.querySelector(".booth-glass");
-
+function drawVisitSnapshotFrame(ctx) {
   ctx.fillStyle = "#121616";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, 960, 720);
   ctx.fillStyle = "#252d2b";
   ctx.fillRect(56, 52, 848, 580);
   ctx.strokeStyle = "#60706a";
@@ -726,6 +718,70 @@ async function downloadVisitSnapshot() {
   ctx.rotate(0.28);
   ctx.fillRect(0, 0, 76, 520);
   ctx.restore();
+}
+
+function drawVisitSnapshotChrome(ctx) {
+  ctx.strokeStyle = "#f3b84f";
+  ctx.lineWidth = 10;
+  ctx.strokeRect(36, 32, 888, 620);
+  ctx.fillStyle = "#f3b84f";
+  ctx.font = "900 30px system-ui";
+  ctx.fillText("VISITATION SNAPSHOT", 112, 82);
+  ctx.font = "900 20px system-ui";
+  ctx.fillText(new Date().toLocaleString("zh-TW"), 650, 82);
+}
+
+function drawVisitSnapshotFallback(ctx, expression, reaction) {
+  drawVisitSnapshotFrame(ctx);
+  drawVisitSnapshotFace(ctx, expression, 480, 294, 1.35);
+  ctx.fillStyle = "#f8f5ea";
+  ctx.fillRect(116, 536, 728, 80);
+  ctx.fillStyle = "#151818";
+  ctx.font = "900 26px system-ui";
+  wrapCanvasText(ctx, reaction, 680).forEach((line, index) => {
+    ctx.fillText(line, 142, 572 + index * 30);
+  });
+  drawVisitSnapshotChrome(ctx);
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    try {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error("Canvas export returned an empty blob."));
+        }
+      }, "image/png");
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+function downloadBlob(blob, filename) {
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadVisitSnapshot() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 960;
+  canvas.height = 720;
+  const ctx = canvas.getContext("2d");
+  const expression = state.visit.currentExpression || { id: inmateFace.dataset.expression || "idle" };
+  const reaction = inmateReaction.textContent || "對方表情管理已宣告破產。";
+  const boothGlass = document.querySelector(".booth-glass");
+  const filename = `visitation-photo-${Date.now()}.png`;
+
+  drawVisitSnapshotFrame(ctx);
 
   let usedDomSnapshot = false;
   if (boothGlass) {
@@ -739,47 +795,33 @@ async function downloadVisitSnapshot() {
   }
 
   if (!usedDomSnapshot) {
-    drawVisitSnapshotFace(ctx, expression, 480, 294, 1.35);
-    ctx.fillStyle = "#f8f5ea";
-    ctx.fillRect(116, 536, 728, 80);
-    ctx.fillStyle = "#151818";
-    ctx.font = "900 26px system-ui";
-    wrapCanvasText(ctx, reaction, 680).forEach((line, index) => {
-      ctx.fillText(line, 142, 572 + index * 30);
-    });
+    drawVisitSnapshotFallback(ctx, expression, reaction);
+  } else {
+    drawVisitSnapshotChrome(ctx);
   }
 
-  ctx.strokeStyle = "#f3b84f";
-  ctx.lineWidth = 10;
-  ctx.strokeRect(36, 32, 888, 620);
-  ctx.fillStyle = "#f3b84f";
-  ctx.font = "900 30px system-ui";
-  ctx.fillText("VISITATION SNAPSHOT", 112, 82);
-  ctx.font = "900 20px system-ui";
-  ctx.fillText(new Date().toLocaleString("zh-TW"), 650, 82);
-
-  canvas.toBlob((blob) => {
-    if (!blob) {
-      return;
-    }
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    link.download = `visitation-photo-${Date.now()}.png`;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }, "image/png");
+  try {
+    downloadBlob(await canvasToBlob(canvas), filename);
+  } catch (error) {
+    const fallbackCanvas = document.createElement("canvas");
+    fallbackCanvas.width = 960;
+    fallbackCanvas.height = 720;
+    drawVisitSnapshotFallback(fallbackCanvas.getContext("2d"), expression, reaction);
+    downloadBlob(await canvasToBlob(fallbackCanvas), filename);
+  }
 }
 
-function finishVisit() {
+async function finishVisit() {
   state.mood = clamp(state.mood + 15);
   state.honor = clamp(state.honor - 4);
   updateScores();
   playButtonSound("success");
-  downloadVisitSnapshot();
-  showResult("探監嘴砲完成", "你成功拍下對方被探監的崩壞照片，圖片已下載。");
+  try {
+    await downloadVisitSnapshot();
+    showResult("探監嘴砲完成", "你成功拍下對方被探監的崩壞照片，圖片已下載。");
+  } catch (error) {
+    showResult("下載失敗", "瀏覽器擋下照片輸出。請重新整理後再試一次，或改用拍照下載功能。");
+  }
 }
 
 function drawFittedText(ctx, text, x, y, maxWidth, maxSize) {
