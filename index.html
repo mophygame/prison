@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>勞改牢房二選一</title>
+    <title>鐵窗二選一</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="app">
-      <section class="stage" aria-label="勞改牢房二選一小遊戲">
+      <section class="stage" aria-label="鐵窗二選一小遊戲">
         <div class="topbar">
           <div>
             <p class="eyebrow">Prison Mini Game</p>
-            <h1>勞改牢房二選一</h1>
+            <h1>鐵窗二選一</h1>
           </div>
           <button class="icon-button" id="resetButton" title="重新開始" aria-label="重新開始">↻</button>
         </div>
@@ -139,45 +139,19 @@
                   <option value="proud">莫名自豪</option>
                 </select>
               </label>
-              <label class="toggle-label">
-                <input id="expressionToggle" type="checkbox" checked />
-                顯示表情貼紙
-              </label>
-              <label>
-                臉部貼紙
-                <select id="faceStickerSelect">
-                  <option value="none">無</option>
-                  <option value="scar">刀疤</option>
-                  <option value="mole">黑痣</option>
-                  <option value="hairyMole">長毛的痣</option>
-                  <option value="mustache">鬍子</option>
-                </select>
-              </label>
               <label>
                 號碼牌
                 <input id="plateInput" maxlength="10" value="NO. 9527" />
               </label>
               <label>
                 髮型
-                <select id="hairStyleSelect">
-                  <option value="short">短髮</option>
-                  <option value="spiky">刺蝟頭</option>
-                  <option value="middle">中分</option>
-                  <option value="bangs">妹妹頭</option>
-                  <option value="slick">油頭</option>
-                  <option value="afro">爆炸頭</option>
-                  <option value="bald">禿頭</option>
-                  <option value="cap">監獄小帽</option>
-                </select>
-              </label>
-              <label>
-                髮量 / 高度
                 <input id="hairSlider" type="range" min="0" max="100" value="45" />
               </label>
               <div class="button-row">
                 <button id="snapButton">拍照下載</button>
                 <button id="randomButton">亂數造型</button>
               </div>
+              <button id="downloadButton" disabled>下載目前照片</button>
               <p id="photoCaption">可以上傳照片替換人臉，再輸入自己的幹話。</p>
             </div>
           </div>
